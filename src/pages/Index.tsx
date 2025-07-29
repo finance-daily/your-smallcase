@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus, Wallet, TrendingUp, RefreshCw } from "lucide-react";
 import { db, Basket, Stock } from "@/lib/db";
@@ -9,6 +10,7 @@ import { fetchMultipleStockPrices } from "@/lib/stockApi";
 import { calculatePortfolioReturns, formatCurrency, formatPercentage } from "@/lib/calculations";
 
 const Index = () => {
+  const navigate = useNavigate();
   const [baskets, setBaskets] = useState<Basket[]>([]);
   const [allStocks, setAllStocks] = useState<Stock[]>([]);
   const [basketStocks, setBasketStocks] = useState<Map<number, Stock[]>>(new Map());
@@ -252,10 +254,7 @@ const Index = () => {
                 stocks={basketStocks.get(basket.id!) || []}
                 onEdit={setEditingBasket}
                 onDelete={handleDeleteBasket}
-                onClick={(basket) => {
-                  // TODO: Navigate to basket detail view
-                  console.log("Navigate to basket:", basket.name);
-                }}
+                onClick={(basket) => navigate(`/basket/${basket.id}`)}
               />
             ))}
           </div>

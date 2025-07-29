@@ -1,5 +1,5 @@
-// Using a free API for Indian stock prices
-// Note: In production, you might want to use paid APIs for better reliability
+// Using Yahoo Finance API for Indian stock prices
+// Yahoo Finance provides free access to NSE/BSE stocks
 
 interface StockPrice {
   symbol: string;
@@ -8,20 +8,39 @@ interface StockPrice {
   changePercent: number;
 }
 
-// Mock API for demonstration - replace with actual API
+// Yahoo Finance API implementation for Indian stocks
 export async function fetchStockPrice(symbol: string, exchange: 'NSE' | 'BSE'): Promise<number> {
   try {
-    // Simulating API call with mock data
-    // In real implementation, use APIs like Alpha Vantage, Yahoo Finance, or Indian market APIs
-    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
+    // Format symbol for Yahoo Finance API
+    // NSE: RELIANCE.NS, BSE: RELIANCE.BO
+    const yahooSymbol = `${symbol}.${exchange === 'NSE' ? 'NS' : 'BO'}`;
     
-    // Generate mock price based on symbol for consistency
-    const basePrice = getBasePriceForSymbol(symbol);
-    const variation = (Math.random() - 0.5) * 0.1; // ±5% variation
-    return Math.round(basePrice * (1 + variation) * 100) / 100;
+    // Yahoo Finance API endpoint
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data.chart?.result?.[0]?.meta?.regularMarketPrice) {
+      throw new Error(`No price data found for ${yahooSymbol}`);
+    }
+    
+    const price = data.chart.result[0].meta.regularMarketPrice;
+    return Math.round(price * 100) / 100;
+    
   } catch (error) {
-    console.error(`Failed to fetch price for ${symbol}:`, error);
-    throw error;
+    console.error(`Failed to fetch price for ${symbol} on ${exchange}:`, error);
+    // Return fallback price if API fails
+    return getBasePriceForSymbol(symbol);
   }
 }
 

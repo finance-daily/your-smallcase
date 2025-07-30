@@ -7,9 +7,7 @@ interface StockPrice {
 
 // Yahoo Finance API implementation for Indian stocks
 export async function fetchStockPrice(symbol: string): Promise<number> {
-  // const baseUrl = import.meta.env.VITE_BACKEND_API_URL;
-  const baseUrl = '';
-  const url = `${baseUrl}/api/stock/${encodeURIComponent(symbol)}`;
+  const url = `/api/stock/${encodeURIComponent(symbol)}`;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch stock price for ${symbol}: ${response.status}`);

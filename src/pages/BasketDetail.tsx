@@ -36,7 +36,7 @@ const BasketDetail = () => {
     updateStockPrices();
 
     return () => clearInterval(interval);
-  }, [stocks]);
+  }, []); // Remove dependency to prevent infinite loop
 
   const loadBasket = async () => {
     try {

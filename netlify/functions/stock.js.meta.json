@@ -1,0 +1,6 @@
+{
+  "name": "stock",
+  "endpoint": "/api/stock/:symbol",
+  "description": "Get current stock price for a symbol (NSE first, fallback to Google Finance)",
+  "runtime": "nodejs18.x"
+}

@@ -17,7 +17,6 @@ interface AddStockDialogProps {
 export function AddStockDialog({ open, onOpenChange, onSave, basketId, stock }: AddStockDialogProps) {
   const [formData, setFormData] = useState({
     symbol: stock?.symbol || "",
-    exchange: stock?.exchange || "NSE" as const,
     buyPrice: stock?.buyPrice.toString() || "",
     quantity: stock?.quantity.toString() || "",
     purchaseDate: stock?.purchaseDate || new Date().toISOString().split('T')[0]
@@ -33,7 +32,6 @@ export function AddStockDialog({ open, onOpenChange, onSave, basketId, stock }: 
     try {
       await onSave({
         symbol: formData.symbol.trim().toUpperCase(),
-        exchange: formData.exchange,
         buyPrice: parseFloat(formData.buyPrice),
         quantity: parseInt(formData.quantity),
         purchaseDate: formData.purchaseDate,
@@ -43,7 +41,6 @@ export function AddStockDialog({ open, onOpenChange, onSave, basketId, stock }: 
       if (!stock) {
         setFormData({
           symbol: "",
-          exchange: "NSE",
           buyPrice: "",
           quantity: "",
           purchaseDate: new Date().toISOString().split('T')[0]
@@ -61,7 +58,6 @@ export function AddStockDialog({ open, onOpenChange, onSave, basketId, stock }: 
     if (!newOpen && !stock) {
       setFormData({
         symbol: "",
-        exchange: "NSE",
         buyPrice: "",
         quantity: "",
         purchaseDate: new Date().toISOString().split('T')[0]
@@ -99,24 +95,6 @@ export function AddStockDialog({ open, onOpenChange, onSave, basketId, stock }: 
               className="col-span-3"
               placeholder="RELIANCE"
             />
-          </div>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="exchange" className="text-right">
-              Exchange
-            </Label>
-            <Select
-              value={formData.exchange}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, exchange: value as 'NSE' | 'BSE' }))}
-            >
-              <SelectTrigger className="col-span-3">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="NSE">NSE</SelectItem>
-                <SelectItem value="BSE">BSE</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
           
           <div className="grid grid-cols-4 items-center gap-4">

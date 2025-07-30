@@ -24,9 +24,6 @@ export function StockCard({ stock, onEdit, onDelete }: StockCardProps) {
           <CardTitle className="text-lg font-semibold text-card-foreground">
             {stock.symbol}
           </CardTitle>
-          <Badge variant="outline" className="text-xs">
-            {stock.exchange}
-          </Badge>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

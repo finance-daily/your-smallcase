@@ -3,7 +3,6 @@ import Dexie, { Table } from 'dexie';
 export interface Stock {
   id?: number;
   symbol: string;
-  exchange: 'NSE' | 'BSE';
   buyPrice: number;
   quantity: number;
   purchaseDate: string;
@@ -22,7 +21,6 @@ export interface Basket {
 export interface PriceCache {
   id?: number;
   symbol: string;
-  exchange: 'NSE' | 'BSE';
   price: number;
   lastUpdate: string;
 }
@@ -35,9 +33,9 @@ export class PortfolioDatabase extends Dexie {
   constructor() {
     super('PortfolioDatabase');
     this.version(1).stores({
-      stocks: '++id, symbol, exchange, basketId, purchaseDate',
+      stocks: '++id, symbol, basketId, purchaseDate',
       baskets: '++id, name, createdAt',
-      priceCache: '++id, symbol, exchange, lastUpdate'
+      priceCache: '++id, symbol, lastUpdate'
     });
   }
 }

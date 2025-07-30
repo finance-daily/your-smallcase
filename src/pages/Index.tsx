@@ -69,16 +69,12 @@ const Index = () => {
     
     setIsUpdatingPrices(true);
     try {
-      const uniqueStocks = Array.from(
-        new Map(allStocks.map(s => [`${s.symbol}-${s.exchange}`, { symbol: s.symbol, exchange: s.exchange }])).values()
-      );
-      
-      const prices = await fetchMultipleStockPrices(uniqueStocks);
-      
+      const uniqueSymbols = Array.from(new Set(allStocks.map(s => s.symbol)));
+      const prices = await fetchMultipleStockPrices(uniqueSymbols.map(symbol => ({ symbol })));
       // Update stocks with new prices
       const updatedStocks = allStocks.map(stock => ({
         ...stock,
-        currentPrice: prices.get(`${stock.symbol}-${stock.exchange}`) || stock.currentPrice,
+        currentPrice: prices.get(stock.symbol) || stock.currentPrice,
         lastPriceUpdate: new Date().toISOString()
       }));
       

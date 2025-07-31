@@ -72,7 +72,7 @@ export function BasketCard({ basket, stocks, onEdit, onDelete, onClick, priceMap
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Returns</p>
+              <p className="text-sm text-muted-foreground">Returns(XIRR)</p>
               <div className="flex items-center gap-1">
                 {isPositive ? (
                   <TrendingUp className="h-4 w-4 text-financial-green" />

@@ -95,7 +95,7 @@ export function StockCard({ stock, priceMap, onEdit, onDelete }: StockCardProps)
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Returns</span>
+            <span className="text-sm text-muted-foreground">Returns(XIRR)</span>
             <div className="flex items-center gap-1">
               {isPositive ? (
                 <TrendingUp className="h-4 w-4 text-financial-green" />

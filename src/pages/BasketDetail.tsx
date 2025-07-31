@@ -246,7 +246,7 @@ const BasketDetail = () => {
                 </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Return %</p>
+                <p className="text-sm text-muted-foreground">Return(XIRR) %</p>
                 <p className={`text-xl font-bold ${returns.absoluteReturnPercent >= 0 ? 'text-financial-green' : 'text-financial-red'}`}>
                   {formatPercentage(returns.absoluteReturnPercent)}
                 </p>

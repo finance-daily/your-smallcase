@@ -8,14 +8,15 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 interface StockCardProps {
   stock: Stock;
+  priceMap: Map<string, number>;
   onEdit: (stock: Stock) => void;
   onDelete: (stock: Stock) => void;
 }
 
-export function StockCard({ stock, onEdit, onDelete }: StockCardProps) {
-  const returns = calculateAbsoluteReturn(stock);
+export function StockCard({ stock, priceMap, onEdit, onDelete }: StockCardProps) {
+  const returns = calculateAbsoluteReturn(stock, priceMap);
   const isPositive = returns.absoluteReturn >= 0;
-  const currentPrice = stock.currentPrice || stock.buyPrice;
+  const currentPrice = priceMap.get(stock.symbol) || stock.buyPrice;
 
   return (
     <Card className="bg-gradient-card border-border/50 shadow-card hover:shadow-financial transition-all duration-300 group">

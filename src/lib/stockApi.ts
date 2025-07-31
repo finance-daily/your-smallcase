@@ -1,10 +1,3 @@
-interface StockPrice {
-  symbol: string;
-  price: number;
-  change: number;
-  changePercent: number;
-}
-
 // Yahoo Finance API implementation for Indian stocks
 export async function fetchStockPrice(symbol: string): Promise<number> {
   const url = `/api/stock/${encodeURIComponent(symbol)}`;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Plus, RefreshCw, TrendingUp } from "lucide-react";
@@ -8,6 +8,7 @@ import { AddStockDialog } from "@/components/AddStockDialog";
 import { useToast } from "@/hooks/use-toast";
 import { fetchMultipleStockPrices } from "@/lib/stockApi";
 import { calculatePortfolioReturns, formatCurrency, formatPercentage } from "@/lib/calculations";
+import { REFRESH_INTERVAL } from "@/lib/constant";
 
 const BasketDetail = () => {
   const { basketId } = useParams<{ basketId: string }>();
@@ -17,12 +18,16 @@ const BasketDetail = () => {
   const [showAddStock, setShowAddStock] = useState(false);
   const [editingStock, setEditingStock] = useState<Stock | undefined>();
   const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
+  const [priceMap, setPriceMap] = useState<Map<string, number>>(new Map());
   const { toast } = useToast();
+
+  const stocksList = useMemo(() => Array.from(new Set(stocks.map(s => s.symbol))), [stocks]);
 
   useEffect(() => {
     if (basketId) {
       loadBasket();
       loadStocks();
+      loadPrices();
     }
   }, [basketId]);
 
@@ -30,13 +35,13 @@ const BasketDetail = () => {
     // Update prices every minute
     const interval = setInterval(() => {
       updateStockPrices();
-    }, 60000);
+    }, REFRESH_INTERVAL);
 
     // Initial price update
     updateStockPrices();
 
     return () => clearInterval(interval);
-  }, []); // Remove dependency to prevent infinite loop
+  }, [stocksList]); // Remove dependency to prevent infinite loop
 
   const loadBasket = async () => {
     try {
@@ -44,6 +49,16 @@ const BasketDetail = () => {
       setBasket(basketData || null);
     } catch (error) {
       console.error("Failed to load basket:", error);
+    }
+  };
+
+  const loadPrices = async () => {
+    try {
+      const prices = await db.priceCache.toArray();
+      const priceMap = new Map(prices.map(p => [p.symbol, p.price]));
+      setPriceMap(priceMap);
+    } catch (error) {
+      console.error("Failed to load prices:", error);
     }
   };
 
@@ -61,26 +76,18 @@ const BasketDetail = () => {
     
     setIsUpdatingPrices(true);
     try {
-      const uniqueSymbols = Array.from(new Set(stocks.map(s => s.symbol)));
+      const uniqueSymbols = stocksList;
       const prices = await fetchMultipleStockPrices(uniqueSymbols.map(symbol => ({ symbol })));
-      // Update stocks with new prices
-      const updatedStocks = stocks.map(stock => ({
-        ...stock,
-        currentPrice: prices.get(stock.symbol) || stock.currentPrice,
-        lastPriceUpdate: new Date().toISOString()
-      }));
       
       // Update database
-      await Promise.all(
-        updatedStocks.map(stock => 
-          db.stocks.update(stock.id!, { 
-            currentPrice: stock.currentPrice, 
-            lastPriceUpdate: stock.lastPriceUpdate 
-          })
-        )
+      await db.priceCache.bulkPut(
+        Array.from(prices.entries()).map(([symbol, price]) => ({
+          symbol,
+          price,
+          lastUpdate: new Date().toISOString()
+        }))
       );
-      
-      setStocks(updatedStocks);
+      loadPrices();
       
     } catch (error) {
       console.error("Failed to update prices:", error);
@@ -92,7 +99,13 @@ const BasketDetail = () => {
   const handleAddStock = async (stockData: Omit<Stock, 'id'>) => {
     try {
       await db.stocks.add(stockData);
+      await db.priceCache.put({
+        symbol: stockData.symbol,
+        price: stockData.buyPrice,
+        lastUpdate: new Date().toISOString()
+      });
       await loadStocks();
+      await loadPrices();
       toast({
         title: "Stock added",
         description: `${stockData.symbol} has been added to ${basket?.name}.`,
@@ -112,7 +125,13 @@ const BasketDetail = () => {
     
     try {
       await db.stocks.update(editingStock.id, stockData);
+      await db.priceCache.put({
+        symbol: stockData.symbol,
+        price: stockData.buyPrice,
+        lastUpdate: new Date().toISOString()
+      });
       await loadStocks();
+      await loadPrices();
       setEditingStock(undefined);
       toast({
         title: "Stock updated",
@@ -161,7 +180,7 @@ const BasketDetail = () => {
     );
   }
 
-  const returns = calculatePortfolioReturns(stocks);
+  const returns = calculatePortfolioReturns(stocks, priceMap);
 
   return (
     <div className="min-h-screen bg-background">
@@ -243,6 +262,7 @@ const BasketDetail = () => {
               <StockCard
                 key={stock.id}
                 stock={stock}
+                priceMap={priceMap}
                 onEdit={setEditingStock}
                 onDelete={handleDeleteStock}
               />

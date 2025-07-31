@@ -9,13 +9,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 interface BasketCardProps {
   basket: Basket;
   stocks: Stock[];
+  priceMap: Map<string, number>;
   onEdit: (basket: Basket) => void;
   onDelete: (basket: Basket) => void;
   onClick: (basket: Basket) => void;
 }
 
-export function BasketCard({ basket, stocks, onEdit, onDelete, onClick }: BasketCardProps) {
-  const returns = calculatePortfolioReturns(stocks);
+export function BasketCard({ basket, stocks, onEdit, onDelete, onClick, priceMap }: BasketCardProps) {
+  const returns = calculatePortfolioReturns(stocks, priceMap);
   const stockCount = stocks.length;
   
   const isPositive = returns.absoluteReturn >= 0;

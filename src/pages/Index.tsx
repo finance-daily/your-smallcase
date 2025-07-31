@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus, Wallet, TrendingUp, RefreshCw } from "lucide-react";
@@ -8,6 +8,7 @@ import { CreateBasketDialog } from "@/components/CreateBasketDialog";
 import { useToast } from "@/hooks/use-toast";
 import { fetchMultipleStockPrices } from "@/lib/stockApi";
 import { calculatePortfolioReturns, formatCurrency, formatPercentage } from "@/lib/calculations";
+import { REFRESH_INTERVAL } from "@/lib/constant";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -17,24 +18,28 @@ const Index = () => {
   const [showCreateBasket, setShowCreateBasket] = useState(false);
   const [editingBasket, setEditingBasket] = useState<Basket | undefined>();
   const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
+  const [priceMap, setPriceMap] = useState<Map<string, number>>(new Map());
   const { toast } = useToast();
+
+  const stocksList = useMemo(() => Array.from(new Set(allStocks.map(s => s.symbol))), [allStocks]);
 
   useEffect(() => {
     loadBaskets();
     loadStocks();
+    clearDeletedStocks();
   }, []);
 
   useEffect(() => {
     // Update prices every minute
     const interval = setInterval(() => {
       updateStockPrices();
-    }, 60000);
+    }, REFRESH_INTERVAL);
 
     // Initial price update
     updateStockPrices();
 
     return () => clearInterval(interval);
-  }, []); // Remove dependency to prevent infinite loop
+  }, [stocksList]); // Remove dependency to prevent infinite loop
 
   const loadBaskets = async () => {
     try {
@@ -42,6 +47,24 @@ const Index = () => {
       setBaskets(basketsData);
     } catch (error) {
       console.error("Failed to load baskets:", error);
+    }
+  };
+
+  const clearDeletedStocks = async () => {
+    try {
+      const stocksData = await db.stocks.toArray();
+      const stockSymbols = new Set(stocksData.map(s => s.symbol));
+      const priceCacheRecords = await db.priceCache.toArray();
+      const symbolsToDelete = priceCacheRecords.reduce<string[]>((arr, r) => {
+        if (!stockSymbols.has(r.symbol)) arr.push(r.symbol);
+        return arr;
+      }, []);
+      if (symbolsToDelete.length > 0) {
+        await db.priceCache.where('symbol').anyOf(symbolsToDelete).delete();
+      }
+      await loadPrices();
+    } catch (error) {
+      console.error("Failed to clear deleted stocks:", error);
     }
   };
 
@@ -64,41 +87,32 @@ const Index = () => {
     }
   };
 
+  const loadPrices = async () => {
+    try {
+      const prices = await db.priceCache.toArray();
+      const priceMap = new Map(prices.map(p => [p.symbol, p.price]));
+      setPriceMap(priceMap);
+    } catch (error) {
+      console.error("Failed to load prices:", error);
+    }
+  };
+
   const updateStockPrices = async () => {
     if (allStocks.length === 0) return;
     
     setIsUpdatingPrices(true);
     try {
-      const uniqueSymbols = Array.from(new Set(allStocks.map(s => s.symbol)));
+      const uniqueSymbols = stocksList;
       const prices = await fetchMultipleStockPrices(uniqueSymbols.map(symbol => ({ symbol })));
       // Update stocks with new prices
-      const updatedStocks = allStocks.map(stock => ({
-        ...stock,
-        currentPrice: prices.get(stock.symbol) || stock.currentPrice,
-        lastPriceUpdate: new Date().toISOString()
-      }));
-      
-      // Update database
-      await Promise.all(
-        updatedStocks.map(stock => 
-          db.stocks.update(stock.id!, { 
-            currentPrice: stock.currentPrice, 
-            lastPriceUpdate: stock.lastPriceUpdate 
-          })
-        )
+      await db.priceCache.bulkPut(
+        Array.from(prices.entries()).map(([symbol, price]) => ({
+          symbol,
+          price,
+          lastUpdate: new Date().toISOString()
+        }))
       );
-      
-      setAllStocks(updatedStocks);
-      
-      // Regroup stocks
-      const grouped = new Map<number, Stock[]>();
-      updatedStocks.forEach(stock => {
-        if (!grouped.has(stock.basketId)) {
-          grouped.set(stock.basketId, []);
-        }
-        grouped.get(stock.basketId)!.push(stock);
-      });
-      setBasketStocks(grouped);
+      loadPrices();
       
     } catch (error) {
       console.error("Failed to update prices:", error);
@@ -173,7 +187,7 @@ const Index = () => {
     }
   };
 
-  const portfolioReturns = calculatePortfolioReturns(allStocks);
+  const portfolioReturns = calculatePortfolioReturns(allStocks, priceMap);
 
   return (
     <div className="min-h-screen bg-background">
@@ -247,6 +261,7 @@ const Index = () => {
               <BasketCard
                 key={basket.id}
                 basket={basket}
+                priceMap={priceMap}
                 stocks={basketStocks.get(basket.id!) || []}
                 onEdit={setEditingBasket}
                 onDelete={handleDeleteBasket}

@@ -8,9 +8,9 @@ export interface ReturnData {
   currentValue: number;
 }
 
-export function calculateAbsoluteReturn(stock: Stock): ReturnData {
+export function calculateAbsoluteReturn(stock: Stock, priceMap: Map<string, number>): ReturnData {
   const totalInvested = stock.buyPrice * stock.quantity;
-  const currentValue = (stock.currentPrice || stock.buyPrice) * stock.quantity;
+  const currentValue = (priceMap.get(stock.symbol) || stock.buyPrice) * stock.quantity;
   const absoluteReturn = currentValue - totalInvested;
   const absoluteReturnPercent = (absoluteReturn / totalInvested) * 100;
 
@@ -23,14 +23,14 @@ export function calculateAbsoluteReturn(stock: Stock): ReturnData {
   };
 }
 
-export function calculatePortfolioReturns(stocks: Stock[]): ReturnData {
+export function calculatePortfolioReturns(stocks: Stock[], priceMap: Map<string, number>): ReturnData {
   const totalInvested = stocks.reduce((sum, stock) => sum + (stock.buyPrice * stock.quantity), 0);
-  const currentValue = stocks.reduce((sum, stock) => sum + ((stock.currentPrice || stock.buyPrice) * stock.quantity), 0);
+  const currentValue = stocks.reduce((sum, stock) => sum + ((priceMap.get(stock.symbol) || stock.buyPrice) * stock.quantity), 0);
   const absoluteReturn = currentValue - totalInvested;
   const absoluteReturnPercent = totalInvested > 0 ? (absoluteReturn / totalInvested) * 100 : 0;
 
   // Calculate XIRR
-  const xirr = calculateXIRR(stocks);
+  const xirr = calculateXIRR(stocks, priceMap);
 
   return {
     absoluteReturn,
@@ -41,7 +41,7 @@ export function calculatePortfolioReturns(stocks: Stock[]): ReturnData {
   };
 }
 
-export function calculateXIRR(stocks: Stock[]): number {
+export function calculateXIRR(stocks: Stock[], priceMap: Map<string, number>): number {
   if (stocks.length === 0) return 0;
 
   // Create cash flows for XIRR calculation
@@ -57,7 +57,7 @@ export function calculateXIRR(stocks: Stock[]): number {
   
   // Add current value as final cash flow (positive)
   const currentValue = stocks.reduce((sum, stock) => 
-    sum + ((stock.currentPrice || stock.buyPrice) * stock.quantity), 0
+    sum + ((priceMap.get(stock.symbol) || stock.buyPrice) * stock.quantity), 0
   );
   
   cashFlows.push({
@@ -124,8 +124,8 @@ export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(amount);
 }
 

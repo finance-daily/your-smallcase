@@ -7,8 +7,6 @@ export interface Stock {
   quantity: number;
   purchaseDate: string;
   basketId: number;
-  currentPrice?: number;
-  lastPriceUpdate?: string;
 }
 
 export interface Basket {
@@ -19,7 +17,6 @@ export interface Basket {
 }
 
 export interface PriceCache {
-  id?: number;
   symbol: string;
   price: number;
   lastUpdate: string;
@@ -32,10 +29,10 @@ export class PortfolioDatabase extends Dexie {
 
   constructor() {
     super('PortfolioDatabase');
-    this.version(1).stores({
+    this.version(2).stores({
       stocks: '++id, symbol, basketId, purchaseDate',
       baskets: '++id, name, createdAt',
-      priceCache: '++id, symbol, lastUpdate'
+      priceCache: '&symbol, lastUpdate'
     });
   }
 }

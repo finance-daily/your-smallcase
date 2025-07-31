@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 
-export default async function handler(event, context) {
+const handler = async (event, context) => {
   const symbol = event.path.split('/').pop();
 
   if (!symbol) {
@@ -73,4 +73,4 @@ export default async function handler(event, context) {
   }
 }
 
-export const handler = handler;
+export { handler };
